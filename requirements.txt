@@ -1,4 +1,3 @@
-# Lista de dependências
 Flask
 requests
 pandas
