@@ -2,7 +2,7 @@ import os
 from flask import Flask, request
 import requests
 
-TOKEN = '8169013667:AAEyhMIOOXzLXu3hcslCiM_98Nza2Tn2zco'
+TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_API_URL = f'https://api.telegram.org/bot{TOKEN}/sendMessage'
 
 app = Flask(__name__)
@@ -29,4 +29,5 @@ def send_message(chat_id, text):
     requests.post(TELEGRAM_API_URL, json=payload)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    from waitress import serve
+    serve(app, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
