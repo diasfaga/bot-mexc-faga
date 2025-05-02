@@ -11,8 +11,8 @@ MEXC_API_SECRET = '54ace640205a4dc2a8188b4e58132ca6'
 TELEGRAM_TOKEN = '7141208046:AAER6JutMbcixWVsoVRj6Sb8zXo8qV8PJj8'
 CHAT_ID = '6237510676'
 
-BASE_URL = 'https://api.mexc.com'
-BALANCE_ENDPOINT = '/api/v3/private/account/assets'  # endpoint correto para futuros
+BASE_URL = 'https://contract.mexc.com'
+BALANCE_ENDPOINT = '/api/v1/private/account/assets'  # endpoint correto para FUTUROS
 
 def send_telegram_message(message):
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
@@ -21,22 +21,28 @@ def send_telegram_message(message):
 
 def get_futures_balance():
     timestamp = str(int(time.time() * 1000))
+    method = 'GET'
+    request_path = BALANCE_ENDPOINT
+    
     query_string = f'timestamp={timestamp}'
-    signature = hmac.new(MEXC_API_SECRET.encode(), query_string.encode(), hashlib.sha256).hexdigest()
+    signature_payload = f'{method}{request_path}{query_string}'
+    signature = hmac.new(MEXC_API_SECRET.encode(), signature_payload.encode(), hashlib.sha256).hexdigest()
 
     headers = {
         'Content-Type': 'application/json',
-        'ApiKey': MEXC_API_KEY
+        'ApiKey': MEXC_API_KEY,
+        'Request-Time': timestamp,
+        'Signature': signature
     }
 
-    url = f"{BASE_URL}{BALANCE_ENDPOINT}?{query_string}&signature={signature}"
+    url = f"{BASE_URL}{BALANCE_ENDPOINT}?{query_string}"
 
     try:
         response = requests.get(url, headers=headers)
         data = response.json()
 
         if response.status_code == 200 and isinstance(data, dict) and 'data' in data:
-            usdt_asset = next((item for item in data['data'] if item.get('asset') == 'USDT'), None)
+            usdt_asset = next((item for item in data['data'] if item.get('currency') == 'USDT'), None)
             if usdt_asset:
                 available_balance = usdt_asset.get('availableBalance')
                 return f"💰 Saldo disponível (USDT): {available_balance}"
