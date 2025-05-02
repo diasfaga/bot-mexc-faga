@@ -1,58 +1,54 @@
 import os
+import time
+import hmac
+import hashlib
 import requests
 from flask import Flask, request
 
-TOKEN = '7141208046:AAER6JutMbcixWVsoVRj6Sb8zXo8qV8PJj8'
-CHAT_ID = '6237510676'
-MEXC_API_KEY = 'mx0vgl25FDEAdQxYh5'
-MEXC_API_SECRET = '54ace640205a4dc2a8188b4e58132ca6'
-
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return '✅ Bot rodando e pronto.'
+API_KEY = "mx0vgl25FDEAdQxYh5"
+API_SECRET = "54ace640205a4dc2a8188b4e58132ca6"
+BOT_TOKEN = "7141208046:AAER6JutMbcixWVsoVRj6Sb8zXo8qV8PJj8"
+CHAT_ID = "6237510676"
 
-@app.route(f'/7141208046:AAER6JutMbcixWVsoVRj6Sb8zXo8qV8PJj8', methods=['POST'])
+BASE_URL = "https://api.mexc.com"
+
+def send_telegram_message(text):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    data = {"chat_id": CHAT_ID, "text": text}
+    requests.post(url, data=data)
+
+@app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     data = request.get_json()
-    print('📥 Recebido do Telegram:', data)
-    if 'message' in data and 'text' in data['message']:
-        chat_id = data['message']['chat']['id']
-        text = data['message']['text']
-        if text == '/start':
-            send_message(chat_id, '✅ Bot de futuros MEXC online e funcionando!')
-        elif text == '/help':
-            send_message(chat_id, 'ℹ️ Comandos disponíveis: /start, /stop, /status, /help')
-        elif text == '/status':
-            send_message(chat_id, '✅ Status: Bot ativo. Conectado à MEXC.')
-        elif text == '/balance':
-            balance = get_balance()
-            send_message(chat_id, f'💰 Saldo disponível: {balance} USDT')
-    return 'ok'
+    if "message" in data and "text" in data["message"]:
+        text = data["message"]["text"]
+        if text == "/start":
+            send_telegram_message("✅ Bot de futuros MEXC online e funcionando!")
+        elif text == "/status":
+            send_telegram_message("✅ Status: Bot ativo. Conectado à MEXC.")
+        elif text == "/balance":
+            balance = get_account_balance()
+            send_telegram_message(f"💰 Saldo disponível: {balance} USDT")
+        else:
+            send_telegram_message("❓ Comando não reconhecido.")
+    return "ok"
 
-def send_message(chat_id, text):
-    url = f'https://api.telegram.org/bot{TOKEN}/sendMessage'
-    payload = {'chat_id': chat_id, 'text': text}
-    r = requests.post(url, json=payload)
-    print('📤 Resposta enviada:', r.text)
-
-def get_balance():
-    url = 'https://api.mexc.com/api/v3/account'
-    headers = {
-        'X-MEXC-APIKEY': MEXC_API_KEY
-    }
+def get_account_balance():
+    path = "/api/v3/account"
+    timestamp = str(int(time.time() * 1000))
+    query_string = f"timestamp={timestamp}"
+    signature = hmac.new(API_SECRET.encode(), query_string.encode(), hashlib.sha256).hexdigest()
+    headers = {"X-MEXC-APIKEY": API_KEY}
+    url = f"{BASE_URL}{path}?{query_string}&signature={signature}"
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         data = response.json()
-        for asset in data.get('balances', []):
-            if asset['asset'] == 'USDT':
-                return asset['free']
-        return '0'
-    else:
-        print('Erro ao buscar saldo:', response.text)
-        return 'Erro'
+        for asset in data.get("balances", []):
+            if asset["asset"] == "USDT":
+                return asset["free"]
+    return "Erro"
 
-if __name__ == '__main__':
-    from waitress import serve
-    serve(app, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
