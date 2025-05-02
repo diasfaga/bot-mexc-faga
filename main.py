@@ -12,7 +12,7 @@ TELEGRAM_TOKEN = '7141208046:AAER6JutMbcixWVsoVRj6Sb8zXo8qV8PJj8'
 CHAT_ID = '6237510676'
 
 BASE_URL = 'https://contract.mexc.com'
-BALANCE_ENDPOINT = '/api/v1/private/account/assets'  # endpoint correto para FUTUROS
+BALANCE_ENDPOINT = '/api/v1/private/account/assets'
 
 def send_telegram_message(message):
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
@@ -23,7 +23,7 @@ def get_futures_balance():
     timestamp = str(int(time.time() * 1000))
     method = 'GET'
     request_path = BALANCE_ENDPOINT
-    
+
     query_string = f'timestamp={timestamp}'
     signature_payload = f'{method}{request_path}{query_string}'
     signature = hmac.new(MEXC_API_SECRET.encode(), signature_payload.encode(), hashlib.sha256).hexdigest()
