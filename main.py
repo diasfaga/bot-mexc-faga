@@ -1,6 +1,6 @@
 import os
 from flask import Flask, request
-from telegram import Bot, Update
+from telegram import Update
 from telegram.ext import Application, CommandHandler
 import asyncio
 
