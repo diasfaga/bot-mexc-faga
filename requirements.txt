@@ -1,3 +1,2 @@
 ccxt
-flask
-requests
+pyTelegramBotAPI
