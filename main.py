@@ -1,6 +1,4 @@
-import time
-import hashlib
-import hmac
+import ccxt
 import requests
 from flask import Flask, request, jsonify
 
@@ -11,8 +9,14 @@ MEXC_API_SECRET = '54ace640205a4dc2a8188b4e58132ca6'
 TELEGRAM_TOKEN = '7141208046:AAER6JutMbcixWVsoVRj6Sb8zXo8qV8PJj8'
 CHAT_ID = '6237510676'
 
-BASE_URL = 'https://contract.mexc.com'
-BALANCE_ENDPOINT = '/api/v1/private/account/assets'
+# Configure ccxt para mexc futures
+exchange = ccxt.mexc({
+    'apiKey': MEXC_API_KEY,
+    'secret': MEXC_API_SECRET,
+    'options': {
+        'defaultType': 'swap',  # importante: para futuros (swap)
+    }
+})
 
 def send_telegram_message(message):
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
@@ -20,44 +24,13 @@ def send_telegram_message(message):
     requests.post(url, data=data)
 
 def get_futures_balance():
-    timestamp = str(int(time.time() * 1000))
-    method = 'GET'
-    request_path = BALANCE_ENDPOINT
-    
-    query_string = f'timestamp={timestamp}'
-    signature_payload = f'{method}{request_path}{query_string}'
-    signature = hmac.new(MEXC_API_SECRET.encode(), signature_payload.encode(), hashlib.sha256).hexdigest()
-
-    headers = {
-        'Content-Type': 'application/json',
-        'ApiKey': MEXC_API_KEY,
-        'Request-Time': timestamp,
-        'Signature': signature
-    }
-
-    url = f"{BASE_URL}{BALANCE_ENDPOINT}?{query_string}"
-
     try:
-        response = requests.get(url, headers=headers)
-        data = response.json()
-
-        if response.status_code == 200 and isinstance(data, dict) and 'data' in data:
-            usdt_asset = next((item for item in data['data'] if item.get('currency') == 'USDT'), None)
-            if usdt_asset:
-                available_balance = usdt_asset.get('availableBalance')
-                margin_balance = usdt_asset.get('marginBalance')
-                unrealized_pnl = usdt_asset.get('unrealizedPnl')
-
-                return (
-                    f"💰 Saldo disponível (USDT): {available_balance}\n"
-                    f"📊 Margem total (USDT): {margin_balance}\n"
-                    f"⚡ PnL não realizado (USDT): {unrealized_pnl}"
-                )
-            else:
-                return "❗ USDT não encontrado nos ativos."
+        balance = exchange.fetch_balance()
+        usdt_balance = balance['total'].get('USDT', None)
+        if usdt_balance is not None:
+            return f"💰 Saldo disponível (USDT): {usdt_balance}"
         else:
-            return f"❗ Erro API: {data}"
-
+            return "❗ USDT não encontrado no saldo."
     except Exception as e:
         return f"❗ Erro ao obter saldo: {str(e)}"
 
