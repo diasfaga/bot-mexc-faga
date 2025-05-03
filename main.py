@@ -12,7 +12,7 @@ exchange = ccxt.mexc({
     'apiKey': api_key,
     'secret': api_secret,
     'options': {
-        'defaultType': 'future'
+        'defaultType': 'swap'  # FUTUROS (mudei aqui para swap que é o certo na MEXC)
     }
 })
 
@@ -20,9 +20,9 @@ exchange = ccxt.mexc({
 def get_total_balance():
     try:
         balance = exchange.fetch_balance()
-        usdt_info = balance['total']['USDT']
-        free_usdt = balance['free']['USDT']
-        used_usdt = balance['used']['USDT']
+        usdt_info = balance['total'].get('USDT', 0)
+        free_usdt = balance['free'].get('USDT', 0)
+        used_usdt = balance['used'].get('USDT', 0)
         return f"💰 Total USDT: {usdt_info}\n✅ Livre: {free_usdt}\n📊 Em uso: {used_usdt}"
     except Exception as e:
         return f"❗ Erro ao obter saldo: {str(e)}"
