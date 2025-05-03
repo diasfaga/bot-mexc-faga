@@ -1,16 +1,14 @@
 import ccxt
+import os
 import telebot
 
-# Configurações
-api_key = 'mx0vgl25FDEAdQxYh5'
-api_secret = '54ace640205a4dc2a8188b4e58132ca6'
-telegram_token = '7141208046:AAER6JutMbcixWVsoVRj6Sb8zXo8qV8PJj8'
-chat_id = '6237510676'
+# Configurações a partir de variáveis de ambiente
+api_key = os.getenv('MEXC_API_KEY')
+api_secret = os.getenv('MEXC_API_SECRET')
+telegram_token = os.getenv('TELEGRAM_TOKEN')
 
-# Inicializa bot Telegram
 bot = telebot.TeleBot(telegram_token)
 
-# Inicializa exchange
 exchange = ccxt.mexc({
     'apiKey': api_key,
     'secret': api_secret,
@@ -41,4 +39,5 @@ def balance(message):
     bot.reply_to(message, result)
 
 # Inicia o polling
-bot.polling()
+if __name__ == '__main__':
+    bot.polling()
