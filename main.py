@@ -1,42 +1,44 @@
 import ccxt
+from flask import Flask, request, jsonify
 import telebot
 
-# Credenciais fixas
-api_key = 'mx0vgl25FDEAdQxYh5'
-api_secret = '54ace640205a4dc2a8188b4e58132ca6'
-telegram_token = '7141208046:AAER6JutMbcixWVsoVRj6Sb8zXo8qV8PJj8'
+MEXC_API_KEY = 'mx0vgl25FDEAdQxYh5'
+MEXC_API_SECRET = '54ace640205a4dc2a8188b4e58132ca6'
+TELEGRAM_TOKEN = '7141208046:AAER6JutMbcixWVsoVRj6Sb8zXo8qV8PJj8'
+CHAT_ID = '6237510676'
 
-bot = telebot.TeleBot(telegram_token)
+bot = telebot.TeleBot(TELEGRAM_TOKEN)
+app = Flask(__name__)
 
 exchange = ccxt.mexc({
-    'apiKey': api_key,
-    'secret': api_secret,
-    'options': {
-        'defaultType': 'swap'  # FUTUROS (mudei aqui para swap que é o certo na MEXC)
-    }
+    'apiKey': MEXC_API_KEY,
+    'secret': MEXC_API_SECRET,
+    'options': {'defaultType': 'future'}
 })
 
-# Função para puxar saldo completo (total, livre e em uso)
-def get_total_balance():
+def get_balance():
     try:
         balance = exchange.fetch_balance()
-        usdt_info = balance['total'].get('USDT', 0)
-        free_usdt = balance['free'].get('USDT', 0)
-        used_usdt = balance['used'].get('USDT', 0)
-        return f"💰 Total USDT: {usdt_info}\n✅ Livre: {free_usdt}\n📊 Em uso: {used_usdt}"
+        usdt_balance = balance['total'].get('USDT', 0)
+        return f"💰 Saldo total (USDT): {usdt_balance}"
     except Exception as e:
         return f"❗ Erro ao obter saldo: {str(e)}"
 
-# Comandos do Telegram
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.reply_to(message, "✅ Bot de futuros MEXC online e pronto!")
+@app.route(f"/{TELEGRAM_TOKEN}", methods=['POST'])
+def webhook():
+    update = request.get_json()
 
-@bot.message_handler(commands=['balance'])
-def balance(message):
-    result = get_total_balance()
-    bot.reply_to(message, result)
+    if 'message' in update and 'text' in update['message']:
+        chat_id = update['message']['chat']['id']
+        text = update['message']['text']
 
-# Inicia o polling
+        if text == '/start':
+            bot.send_message(chat_id, "✅ Bot de futuros MEXC online e funcionando!")
+        elif text == '/balance':
+            balance_msg = get_balance()
+            bot.send_message(chat_id, balance_msg)
+
+    return jsonify({'ok': True})
+
 if __name__ == '__main__':
-    bot.polling()
+    app.run(host='0.0.0.0', port=8080)
