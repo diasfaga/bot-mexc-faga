@@ -1,6 +1,5 @@
 import ccxt
 import telebot
-import os
 
 MEXC_API_KEY = 'mx0vgl25FDEAdQxYh5'
 MEXC_API_SECRET = '54ace640205a4dc2a8188b4e58132ca6'
