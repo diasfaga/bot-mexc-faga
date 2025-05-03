@@ -25,7 +25,7 @@ def webhook():
         elif text == '/balance':
             try:
                 balance = exchange.fetch_balance()
-                usdt_balance = balance['total']['USDT']
+                usdt_balance = balance['total'].get('USDT', 'Indisponível')
                 send_message(chat_id, f"💰 Saldo total (USDT): {usdt_balance}")
             except Exception as e:
                 send_message(chat_id, f"❗ Erro ao obter saldo: {str(e)}")
